@@ -1,0 +1,10 @@
+# copied from /vagrant/kevin/setup/zshrc.opts
+
+# set default editor
+export editor="vi"
+
+# get rid of that awful green +x dir color
+eval $( dircolors #SETUPDIR#/lscolors.txt )
+
+# respect $LS_COLORS when auto-completing (tab)
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
