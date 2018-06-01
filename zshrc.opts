@@ -1,7 +1,7 @@
 # copied from /vagrant/kevin/setup/zshrc.opts
 
 # set default editor
-export editor="vi"
+export EDITOR="vi"
 
 # get rid of that awful green +x dir color
 eval $( dircolors #SETUPDIR#/lscolors.txt )
