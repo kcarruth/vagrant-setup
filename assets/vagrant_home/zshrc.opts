@@ -1,4 +1,5 @@
 # copied from /vagrant/kevin/setup/zshrc.opts
+# NOREPEAT
 
 # set default editor
 export EDITOR="vi"

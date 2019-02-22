@@ -14,8 +14,8 @@ COLLAB_HOME="/lv1/collab"
 SETUP_DIR="/vagrant/kevin/setup"
 
 # back up default vimrc
-if [[ -f $VAGRANT_HOME/.vimrc ]]; then
-  mv $VAGRANT_HOME/.vimrc $VAGRANT_HOME/.vimrc.bkup
+if [[ -f $VAGRANT_HOME/.vimrc && ! -f $VAGRANT_HOME/.vimrc.orig ]]; then
+  mv $VAGRANT_HOME/.vimrc $VAGRANT_HOME/.vimrc.orig
 fi
 
 # shell specific stuff
@@ -23,20 +23,28 @@ if [[ "$SHELL" == "/usr/bin/zsh" ]]; then
   #
   # vi opts
   #
-  ln -s $SETUP_DIR/vimrc.zsh $VAGRANT_HOME/.vimrc
+  if [[ -f $VAGRANT_HOME/.vimrc ]]; then
+    rm $VAGRANT_HOME/.vimrc
+  fi
+  ln -s $SETUP_DIR/assets/vagrant_home/vimrc.zsh $VAGRANT_HOME/.vimrc
 
   #
   # zsh opts
   #
-  cp $VAGRANT_HOME/.zshrc $VAGRANT_HOME/.zshrc.old
+  if [[ ! -f $VAGRANT_HOME/.zshrc.orig ]]; then
+    # back up original
+    cp $VAGRANT_HOME/.zshrc $VAGRANT_HOME/.zshrc.orig
+  fi
 
-  # theme
+  # replace theme
   sed -i "s/^ZSH_THEME=.*$/ZSH_THEME=mrtazz/" $VAGRANT_HOME/.zshrc
 
   # set dir colors
-  cat $SETUP_DIR/zshrc.opts | sed "s|#SETUPDIR#|$SETUP_DIR|g" >> $VAGRANT_HOME/.zshrc
+  if [[ ! $( grep "NOREPEAT" $VAGRANT_HOME/.zshrc ) ]]; then
+    cat $SETUP_DIR/assets/vagrant_home/zshrc.opts | sed "s|#SETUPDIR#|$SETUP_DIR/assets/vagrant_home|g" >> $VAGRANT_HOME/.zshrc
+  fi
 else
-  ln -s $SETUP_DIR/vimrc.bash $VAGRANT_HOME/.vimrc
+  ln -s $SETUP_DIR/assets/vagrant_home/vimrc.bash $VAGRANT_HOME/.vimrc
 fi  
 
 # mysql
@@ -45,9 +53,11 @@ if [[ ! -f $VAGRANT_HOME/.my.cnf ]]; then
 fi 
 
 # grep wrapper
-if [[ ! -e $COLLAB_HOME/bin/kgrep ]]; then
-	ln -s $SETUP_DIR/kgrep $COLLAB_HOME/bin/kgrep
-fi
+for a in $( ls $SETUP_DIR/assets/collab_bin ); do
+  if [[ ! -e $COLLAB_HOME/bin/$a ]]; then
+    ln -s $SETUP_DIR/assets/collab_bin/$a $COLLAB_HOME/bin/$a
+  fi
+done
 
 #cmdir="/usr/local/sakai/content/cm/current-data/support"
 #if [[ ! -d $cmdir ]]; then
