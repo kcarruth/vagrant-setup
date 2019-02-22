@@ -1,0 +1,23 @@
+#!/bin/bash
+#
+# 'peel' off last git commit(s) and stash them, preserving comment
+
+if [[ $1 == "" ]]; then
+  count="1"
+else
+  count=$1
+fi
+
+if [[ $( git status --short ) ]]; then
+  echo "error: local changes present. handle those first"
+  exit
+fi
+
+for ((x=0;x<$count;x++)); do
+
+  comment=$( git log --pretty="format:%s" HEAD^..HEAD )
+
+  git reset HEAD^
+  git stash save "$comment"
+
+done
