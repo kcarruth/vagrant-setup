@@ -1,0 +1,188 @@
+#!/usr/bin/perl
+#
+# query uva's LDAP for user info
+# NOT WRITTEN BY ME
+#  author unknown, given to me by someone at systems group
+
+use strict;
+
+use Net::LDAP;
+
+# LDAP server:
+my $ldapserver = 'ldap.virginia.edu';
+
+# Minimum query length:
+my $minquery = 2;
+
+# Maximum number of matching entries before switching to brief display:
+my $maxmatch = 10;
+
+# Parse command-line arguments:
+my $querystring = shift;
+unless ($querystring) {
+    Syntax($0);
+    exit(1);
+}
+if ( length($querystring) < $minquery ) {
+    print ("You must supply at least $minquery characters.\n");
+    exit(1);
+}
+
+# Look to see if user entered the query in the format "lastname,firstname":
+my $firstname = '';
+my $lastname = '';
+if ( $querystring =~ /^(.*?),(.*)/ ) {
+    $lastname = $1;
+    $firstname = $2;
+}
+
+# Map LDAP attributes to displayed attributes:
+my $attributes = {'displayName' => {name=>'Name',order=>1},
+		  'uid' => {name=>'Mailid/Handle',order=>2},
+		  'UnixUID' => {name=>'Unix Uid',order=>3},
+		  'description' => {name=>'Classification',order=>4},
+		  'uvaDisplayDepartment' => {name=>'Department',order=>5},
+		  'physicalDeliveryOfficeName' => {name=>'Office Address',order=>6,editfrom=>' United States of America',editto=>''},
+		  'telephoneNumber' => {name=>'Office Phone',order=>6},
+		  'mail' => {name=>'Registered E-mail Addr',order=>7},
+		  'mailAlternateAddress' => {name=>'E-Mail Alias',order=>8}};
+
+# Attributes used in abbreviated display, when there are many entries:
+my $briefattributes = {'displayName' => {name=>'Name',order=>1,length=>25},
+		       'uid' => {name=>'UserID',order=>2,length=>8},
+		       'description' => {name=>'Class',order=>4,length=>10},
+		       'uvaDisplayDepartment' => {name=>'Department',order=>5,length=>30}};
+
+# Connect to LDAP server:
+my $ldap = Net::LDAP->new($ldapserver) or die "$@";
+my $status = $ldap->bind();
+$status->code && die $status->error;
+
+# Set filter based on query parameters given on command line:
+my $filter = '';
+if ( $firstname ) {
+    $filter = "(&(sn=$lastname*)(givenName=$firstname*))";
+} else {
+    if ( $querystring =~ /^\!(.*)/ ) {
+	my $userid = $1;
+	$filter = "uid=$userid";
+    } else {
+	$filter = "(|(uid=$querystring)(displayName=*$querystring*))";
+    }
+}
+
+# Do the LDAP search:
+my $status = $ldap->search( base => "o=University of Virginia,c=US",
+                            filter => $filter );
+
+# Were there any matches?:
+if ( $status->count ) {
+    # Loop through matching entries:
+    my $writeheader = 1;
+    for my $entry ( $status->all_entries ) {
+	$status->count<=$maxmatch ? DisplayEntryFull( $entry, $attributes ) : DisplayEntryBrief( $entry, $briefattributes, $writeheader );
+	$writeheader = 0;
+    }
+} else {
+    print "No matching entries found.\n";
+}
+
+# Disconnect from LDAP server:
+$ldap->unbind;
+
+sub DisplayEntryFull {
+    my $entry = shift;
+    my $attributes = shift;
+
+    # Loop through this entry's attributes:
+    for my $attrib (sort {$attributes->{$a}{order} <=> $attributes->{$b}{order}} keys %$attributes) {
+	printf("\t%-25s", $attributes->{$attrib}{name}.": " );
+	my @values = $entry->get_value($attrib);
+	my $first = 1; # Flag to handle indentation of subsequent entries.
+	# Loop through all values given for this attribute:
+	if ( @values ) {
+	    for my $val (@values) {
+		# If an attribute value needs specific editing, do it:
+		if ( $attributes->{$attrib}{editfrom} ) {
+		    my $from = $attributes->{$attrib}{editfrom};
+		    my $to = $attributes->{$attrib}{editto};
+		    $val =~ s/$from/$to/g;
+		}
+		# Strip off leading "E0:" in new LDAP data:
+		$val =~ s/^E0://;
+		$first?print "$val\n":printf("\t%25s%s\n"," ",$val);
+		$first=0;
+	    }
+	} else {
+	    print "\n";
+	}
+    }
+    print "\n";
+}
+
+sub DisplayEntryBriefHeader {
+    my $attributes = shift;
+
+    print "Found many matches. Select one by repeating the search using \\!userid\n";
+    print "as the query string.\n\n";
+
+    # Write column headers:
+    for my $attrib (sort {$attributes->{$a}{order} <=> $attributes->{$b}{order}} keys %$attributes) {
+	# Truncate value to specified length:
+	my $format = '%-'.$attributes->{$attrib}{length}.'.'.$attributes->{$attrib}{length}.'s ';
+	printf($format, $attributes->{$attrib}{name});
+    }
+    print "\n";
+
+    # Write "underlines":
+    for my $attrib (sort {$attributes->{$a}{order} <=> $attributes->{$b}{order}} keys %$attributes) {
+	# Truncate value to specified length:
+	my $format = '%-'.$attributes->{$attrib}{length}.'.'.$attributes->{$attrib}{length}.'s ';
+	printf($format, "-"x{length($attributes->{$attrib}{name})});
+    }
+    print "\n";
+}
+
+sub DisplayEntryBrief {
+    my $entry = shift;
+    my $attributes = shift;
+    my $writeheader = shift;
+
+    if ( $writeheader ) {
+	DisplayEntryBriefHeader( $attributes );
+    }
+
+    # Loop through this entry's attributes:
+    for my $attrib (sort {$attributes->{$a}{order} <=> $attributes->{$b}{order}} keys %$attributes) {
+	my @values = $entry->get_value($attrib);
+	chomp( my $val = $values[0] );
+	# Strip off leading "E0:" in new LDAP data:
+	$val =~ s/^E0://;
+	# Truncate value to specified length:
+	my $format = '%-'.$attributes->{$attrib}{length}.'.'.$attributes->{$attrib}{length}.'s ';
+	printf($format, $val);
+    }
+    print "\n";
+}
+
+sub Syntax {
+    my $prog = shift;
+
+    print "Syntax is either:
+
+        $prog something
+
+where 'something' is either an exact user ID or a string contained
+within the user's 'displayName' (whole name), or:
+
+        $prog \\!userid
+
+where 'userid' is an exact user ID, or:
+
+        $prog lastname,firstname
+
+where 'lastname' and 'firstname' are each the beginning of a name.
+Note that no spaces are allowed around the comma.
+";
+
+}
