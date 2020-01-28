@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# check code / props for lingering dev flags
+
+codepath="/lv1/collab/code"
+configpath="/lv1/collab/config"
+
+if [[ "$1" != "" ]]; then
+  if [[ -d "$1" ]]; then
+    codepath="$1"
+  fi
+fi
+
+flags=(
+  "KDEBUG"
+  "KWORK"
+)
+
+for flag in ${flags[@]}; do
+  grepresult=$( grep -orl "$flag" $codepath | grep -v "/target/" )$( grep -orl "$flag" $configpath | grep -v "/target/" )
+
+  if [[ $grepresult != "" ]]; then
+    echo "> found lingering $flag"
+  fi
+done

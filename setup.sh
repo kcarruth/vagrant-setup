@@ -13,6 +13,11 @@ VAGRANT_HOME="/home/vagrant"
 COLLAB_HOME="/lv1/collab"
 SETUP_DIR="/vagrant/kevin/setup"
 
+# quick-verify that instance appears set up
+if [[ ! -d /lv1/collab/bin ]]; then
+  echo "Hmm. Looks like vagrant setup didn't complete."
+fi
+
 # back up default vimrc
 if [[ -f $VAGRANT_HOME/.vimrc && ! -f $VAGRANT_HOME/.vimrc.orig ]]; then
   mv $VAGRANT_HOME/.vimrc $VAGRANT_HOME/.vimrc.orig
@@ -41,7 +46,7 @@ if [[ "$SHELL" == "/usr/bin/zsh" ]]; then
 
   # set dir colors
   if [[ ! $( grep "NOREPEAT" $VAGRANT_HOME/.zshrc ) ]]; then
-    cat $SETUP_DIR/assets/vagrant_home/zshrc.opts | sed "s|#SETUPDIR#|$SETUP_DIR/assets/vagrant_home|g" >> $VAGRANT_HOME/.zshrc
+    cat $SETUP_DIR/assets/vagrant_home/zshrc.opts | sed "s|#SETUPDIR#|$SETUP_DIR|g" >> $VAGRANT_HOME/.zshrc
   fi
 else
   ln -s $SETUP_DIR/assets/vagrant_home/vimrc.bash $VAGRANT_HOME/.vimrc

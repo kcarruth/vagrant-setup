@@ -1,0 +1,5 @@
+#!/bin/bash
+
+jarloc=/lv1/collab/build/collab/deploy
+
+find $jarloc -name "*.jar" | xargs rm -f
