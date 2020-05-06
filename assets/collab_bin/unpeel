@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# 'unpeel' the top git stash element(s) and re-commit, preserving comment
+
+if [[ $1 == "" ]]; then
+  count="1"
+else
+  count=$1
+fi
+
+# check 'git status' and exit if any local changes present
+function check_git_status {
+  if [[ $( git status --short ) ]]; then
+    if [[ "$1" != "" ]]; then
+      echo "$1"
+    fi
+    exit
+  fi
+}
+
+# do an initial status check
+check_git_status "error: local changes present. handle those first"
+
+# get stash
+IFS=$'\r\n'
+stash=( $( git stash list --pretty="format:%s" ) )
+
+# pop each one and commit it
+for ((x=0;x<$count;x++)); do
+
+  check_git_status "error: something's left over from previous commit. fix that up and try again"
+
+  item=${stash[$x]}
+  comment=$( echo $item | sed -r "s/^On [^:]+: //" )
+
+  err=$( git stash pop 2>&1 )
+
+  if [[ $( echo $err | grep "CONFLICT" ) ]]; then
+    echo "error: pop didn't go cleanly. fix that up and drop stash@{0}"
+    exit
+  fi
+
+  git add --all
+  git commit -m "$comment"
+
+done
