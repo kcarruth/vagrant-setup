@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+# build multiple tools in succession
+
+currentdir=$( pwd )
+sakaipath=/lv1/collab/code
+
+if [[ "$1" == "" ]]; then
+  echo "usage: $0 [-n|--no-tests] tool1 [tool2 ... toolN]"
+fi
+
+tests=1
+declare -a toollist;
+
+for arg in "$@"; do
+  if [[ "$arg" == "-n" || "$arg" == "--no-tests" ]]; then
+    tests=0
+  else
+    # check tool existence/validity
+    if [[ "$arg" == "gradebooks" ]]; then
+      # special case, build gb tools 
+      toollist+=("edu-services")
+      toollist+=("gradebook")
+      toollist+=("gradebookng")
+    elif [[ -d "${sakaipath}/${arg}" ]]; then
+      toollist+=($arg)
+    else
+      echo "warning: couldn't find tool named '$arg'; skipping"
+    fi
+  fi
+done
+
+buildcmd="mvn clean install sakai:deploy"
+if [[ $tests == 0 ]]; then
+  buildcmd="$buildcmd -Dmaven.test.skip=true"
+fi
+
+for tool in "${toollist[@]}"; do
+  cd "${sakaipath}/${tool}"
+  $buildcmd
+done
+
+# return to where we started
+cd $currentdir
