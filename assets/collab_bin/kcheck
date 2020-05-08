@@ -11,15 +11,4 @@ if [[ "$1" != "" ]]; then
   fi
 fi
 
-flags=(
-  "KDEBUG"
-  "KWORK"
-)
-
-for flag in ${flags[@]}; do
-  grepresult=$( grep -orl "$flag" $codepath | grep -v "/target/" )$( grep -orl "$flag" $configpath | grep -v "/target/" )
-
-  if [[ $grepresult != "" ]]; then
-    echo "> found lingering $flag"
-  fi
-done
+egrep -ori "(kdebug|kwork)" $codepath | egrep -v "/(\.git|target)/"
