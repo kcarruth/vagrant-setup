@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# shortcut wrapper to collab deployment script
+
+#### SHARE WITH DEPLOY ####
+if [[ "$1" == "" ]]; then
+  echo "must provide a branch (ex: COL-1234)"
+  exit
+fi
+
+projects=("COL" "SYS")
+
+pfound=0
+for p in ${projects[@]}; do
+  if [[ $( echo $1| egrep "^$p-" ) ]]; then
+    pfound=1
+    break
+  fi
+done
+
+jira=$1
+if [[ $pfound == 0 ]]; then
+  jira="COL-$1"
+fi
+#### END OF SHARED CODE ####
+
+collab slot branch $jira undeploy
