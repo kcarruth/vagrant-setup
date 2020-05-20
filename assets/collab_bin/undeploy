@@ -2,26 +2,37 @@
 #
 # shortcut wrapper to collab deployment script
 
-#### SHARE WITH DEPLOY ####
 if [[ "$1" == "" ]]; then
   echo "must provide a branch (ex: COL-1234)"
   exit
 fi
 
-projects=("COL" "SYS")
+if [[ "$1" == "all" ]]; then
+  # undeploy all running collab containers (bulk clean-up)
+  containers=$( docker ps --format '{{.Names}}' | grep "collab-vagrant-" | sed -r "s/^collab-vagrant-([A-Z]{2,4}[0-9]+)\..+$/\1/" )
 
-pfound=0
-for p in ${projects[@]}; do
-  if [[ $( echo $1| egrep "^$p-" ) ]]; then
-    pfound=1
-    break
+  for c in ${containers[@]}; do
+    p=$( echo $c | sed -r "s/^([A-Z]{2,4})[0-9]+$/\1/" )
+    n=$( echo $c | sed -r "s/^[A-Z]{2,4}([0-9]+)$/\1/" )
+
+    collab slot branch $p-$n undeploy
+  done
+
+else
+  # undeploy single specified container
+  projects=("COL" "SYS")
+  pfound=0
+  for p in ${projects[@]}; do
+    if [[ $( echo $1| egrep "^$p-" ) ]]; then
+      pfound=1
+      break
+    fi
+  done
+
+  jira=$1
+  if [[ $pfound == 0 ]]; then
+    jira="COL-$1"
   fi
-done
 
-jira=$1
-if [[ $pfound == 0 ]]; then
-  jira="COL-$1"
+  collab slot branch $jira undeploy
 fi
-#### END OF SHARED CODE ####
-
-collab slot branch $jira undeploy
