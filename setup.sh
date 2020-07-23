@@ -16,6 +16,7 @@ SETUP_DIR="/vagrant/kevin/setup"
 # quick-verify that instance appears set up
 if [[ ! -d /lv1/collab/bin ]]; then
   echo "Hmm. Looks like vagrant setup didn't complete."
+  exit
 fi
 
 # back up default vimrc
