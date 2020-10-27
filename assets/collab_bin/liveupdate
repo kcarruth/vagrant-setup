@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# update a running container with a static, non-compiled file (HTML, velocity, etc)
+#
+# WORK-IN-PROGRESS (not working yet)
+
+CODEBASE=/lv1/collab/code
+RUNBASE=/opt/tomcat/webapps
+
+RUNLOC=$( pwd )
+
+FILE="$1"
+if [[ $1 == "" ]]; then
+  echo "must provide a file to push into the container"
+  exit
+fi
+
+# determine container(s)
+cd $CODEBASE
+BRANCH=$( git branch | grep -e "^\*" | sed "s/^\* //" )
+
+CONTAINER=$( docker ps | grep "$BRANCH" | sed "s/^\([^ ]*\) *.*/\1/" );
+
+if [[ $RUNLOC == $CODEBASE ]]; then
+  # try and chop tool from start of file path
+  TOOL=$( echo $FILE | sed "s/^\([^\/]*\)\/.*/\1/" );
+  FILE=$( echo $FILE | sed "s/^\[^\/]*)//" );
+else
+  # chop tool from end of run dir
+  TOOL=$( echo $RUNLOC | sed "s/.*\/\([^\/]*\)$/\1/" );
+fi
+
+# chop package/war from front of filepath
+WAR=$( echo $FILE | sed "s/^\([^\/]*\)\/.*/\1/" );
+
+# get common path
+COMMONPATH=$( echo $FILE | sed "
+
+# copy the file in
+docker cp $CODEBASE/$TOOL/$FILE $CONTAINER:$RUNBASE/sakai-$WAR/
