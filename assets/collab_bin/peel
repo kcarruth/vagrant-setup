@@ -18,6 +18,6 @@ for ((x=0;x<$count;x++)); do
   comment=$( git log --pretty="format:%s" HEAD^..HEAD )
 
   git reset HEAD^
-  git stash save "$comment"
+  git stash save -u "$comment"
 
 done
