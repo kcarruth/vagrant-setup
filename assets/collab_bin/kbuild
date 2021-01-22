@@ -20,7 +20,7 @@ for arg in "$@"; do
     if [[ "$arg" == "gradebooks" ]]; then
       # special case, build gb tools 
       toollist+=("edu-services")
-      toollist+=("gradebook")
+      #toollist+=("gradebook")
       toollist+=("gradebookng")
     elif [[ -d "${sakaipath}/${arg}" ]]; then
       toollist+=($arg)
