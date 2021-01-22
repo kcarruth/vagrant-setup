@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+# simple wrapper script to run the google java formatter on a given
+# code directory (finding java files first) to be run before pushing
+# changes upstream
+
+# take in a dir argument, assume . if none
+workdir="$1"
+if [[ $workdir == "" ]]; then
+	workdir = "."
+fi
+
+# confirm existence of formatter
+if [[ $( which google-java-format ) == "google-java-format not found" ]]; then
+	echo "error: google-java-format not found"
+	exit
+	# for later: install it?
+fi
+
+find $workdir -name "*.java" | xargs google-java-format -i
