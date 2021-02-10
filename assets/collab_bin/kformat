@@ -4,17 +4,41 @@
 # code directory (finding java files first) to be run before pushing
 # changes upstream
 
-# take in a dir argument, assume . if none
-workdir="$1"
-if [[ $workdir == "" ]]; then
-	workdir = "."
-fi
-
 # confirm existence of formatter
 if [[ $( which google-java-format ) == "google-java-format not found" ]]; then
-	echo "error: google-java-format not found"
-	exit
-	# for later: install it?
+  echo "error: google-java-format not found"
+  exit
+  # for later: install it?
 fi
 
-find $workdir -name "*.java" | xargs google-java-format -i
+currentdir=$( pwd )
+sakaipath=/lv1/collab/code
+
+if [[ "$1" == "" ]]; then
+  echo "usage: $0 tool1 [tool2 ... toolN]"
+fi
+
+declare -a toollist;
+
+for arg in "$@"; do
+    # check tool existence/validity
+    if [[ "$arg" == "gradebooks" ]]; then
+      # special case, format the gb tools 
+      toollist+=("edu-services")
+      #toollist+=("gradebook")
+      toollist+=("gradebookng")
+    elif [[ -d "${sakaipath}/${arg}" ]]; then
+      toollist+=($arg)
+    else
+      echo "warning: couldn't find tool named '$arg'; skipping"
+    fi
+done
+
+for tool in "${toollist[@]}"; do
+	echo "... formatting ${tool}"
+  cd "${sakaipath}/${tool}"
+  find $workdir -name "*.java" | xargs google-java-format -i
+done
+
+# return to where we started
+cd $currentdir
